@@ -1,0 +1,6 @@
+SQLALCHEMY_DATABASE_URI = 'mysql://{}:{}@{}:{}/{}'.format(
+    '',             # mysql id
+    '',             # mysql pw
+    '',             # remote addr
+    3306,           # remote port
+    'movielens')    # database name
