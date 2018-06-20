@@ -5,6 +5,7 @@ from datetime import datetime
 from models import Item
 from models import Session
 
+
 def _extract_name_and_year(text, key):
     m = re.search('^(?P<name>.*)\s*\((?P<year>\d{4})\)$', text)
     if m:
@@ -34,6 +35,7 @@ def main():
         assert len(cols) == 24
 
         item = Item()
+        item.dataset = Item.DATASET_MOVIELENS_100K
 
         key = cols[0]
         item.key = key
