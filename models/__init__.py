@@ -50,20 +50,13 @@ class Item(Base):
     category_western = Column(Boolean, default=False, nullable=False)
 
 
-# print(User.__table__)
-# print(User.__mapper__)
-#
-# ed_user = User('haruair', 'Edward Kim', '1234')
-# print(ed_user.name)  # 'haruair'
-# print(ed_user.password)  # '1234'
-# print(ed_user.id)  # 'None'
-#
-# Session = sessionmaker(bind=engine)
-# # Session = sessionmaker()
-# # Session.configure(bind=engine)
-#
-# session = Session()
-# session.add(ed_user)
-# session.commit()
-#
-# print(ed_user.id)
+class RottenMovie(Base):
+    __tablename__ = 'rotten_movie'
+
+    id = Column(Integer, nullable=False, primary_key=True)
+
+    name = Column(String(150), index=True, default='')
+    year = Column(Integer, index=True)
+    url = Column(String(150), index=True, default='')
+
+    data = Column(String(2000), default='')

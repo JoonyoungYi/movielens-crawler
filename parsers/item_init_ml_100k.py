@@ -63,7 +63,7 @@ def main():
                 range(6, 24), [
                     'action', 'adventure', 'animation', 'children', 'comedy',
                     'crime', 'documentary', 'drama', 'fantasy', 'flim_noir',
-                    'horror', 'musical', 'mystery', 'romance', 'sci_fi',
+                    'horror', 'musical', 'imystery', 'romance', 'sci_fi',
                     'thriller', 'war', 'western'
                 ]):
             bool_value = (int(cols[j]) == 1)
