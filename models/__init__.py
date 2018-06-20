@@ -5,14 +5,21 @@ from sqlalchemy.orm import sessionmaker
 
 from configs import *
 
-engine = create_engine(SQLALCHEMY_DATABASE_URI, echo=True)
+engine = create_engine(SQLALCHEMY_DATABASE_URI, echo=False)
 Base = declarative_base()
+Session = sessionmaker(bind=engine)
+
+# Session = sessionmaker()
+# Session.configure(bind=engine)
 
 
 class Item(Base):
     __tablename__ = 'item'
 
+    DATASET_MOVIELENS_100K = 'ml_100k'
+
     id = Column(Integer, nullable=False, primary_key=True)
+    dataset = Column(String(10), index=True, default='')
     key = Column(String(10), index=True, default='')
 
     name = Column(String(150), index=True, default='')
