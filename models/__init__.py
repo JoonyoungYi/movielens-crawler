@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String, Date, Boolean
+from sqlalchemy import Column, Integer, String, Date, Boolean, Text, ForeignKey
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
 
 from configs import *
 
@@ -49,6 +51,12 @@ class Item(Base):
     category_war = Column(Boolean, default=False, nullable=False)
     category_western = Column(Boolean, default=False, nullable=False)
 
+    # Relation
+    rotten_movie_id = Column(
+        Integer,
+        ForeignKey('rotten_movie.id'),
+        nullable=True, )
+
 
 class RottenMovie(Base):
     __tablename__ = 'rotten_movie'
@@ -59,4 +67,7 @@ class RottenMovie(Base):
     year = Column(Integer, index=True)
     url = Column(String(150), index=True, default='')
 
-    data = Column(String(2000), default='')
+    data = Column(Text, default='')
+
+    # Relation
+    items = relationship('Item', backref='rotten_movie', lazy='dynamic')

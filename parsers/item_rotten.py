@@ -1,106 +1,138 @@
 import re
 import json
 # import hashlib
+import time
 
 import requests
-from bs4 import BeautifulSoup
 
-from models import Item
 from models import Session
+from models import Item
+from models import RottenMovie
+
+# key = hashlib.sha512(r.url.encode('utf-8')).hexdigest()
+# assert len(key) <= 128
+# url = r.url
 
 
-def _get(url, **kwargs):
-    r = requests.get(url, **kwargs)
-    # key = hashlib.sha512(r.url.encode('utf-8')).hexdigest()
-    # assert len(key) <= 128
-    # url = r.url
-    return r
+def __filter_movies_by_year(movies, year):
+    if year is None:
+        return []
+
+    _movies = [m for m in movies if m.get('year') and m['year'] == year]
+    # 연도가 정확하게 일치하는 영화를 체크합니다.
+    if not _movies:
+        # 연도가 1년 차이나는 영화를 체크합니다.
+        _movies = [
+            m for m in movies
+            if m.get('year') and (year - 1 <= m['year'] <= year + 1)
+        ]
+    return _movies
 
 
-def _handle_item(item):
-    # if item.year is None:
-    #     return None
-    assert item.year
+def __filter_movies(movies, item):
+    if len(movies) == 1:
+        return movies
 
-    r = _get(
-        'https://www.rottentomatoes.com/search/',
-        params={
-            'search': item.name,
-        })
-    soup = BeautifulSoup(r.text, "html5lib")
-    # print(r.text)
-    div = soup.find('div', {'id': 'main_container'})
-    # div = div.find('div', {'id':'search-results-root'})
-    scripts = div.find_all('script')
-    if len(scripts) < 2:
-        return None
+    return __filter_movies_by_year(movies, item.year)
 
-    script = scripts[0]
-    script = script.get_text().strip()
-    script = re.sub('\s+', ' ', script)
-    # print(script)
 
-    m = re.search(
-        'RT.PrivateApiV2FrontendHost, \'(?P<name>.*)\', (?P<dict>.*)\); }\);',
-        script)
-    assert m
-    name = m.group('name')
-    d = json.loads(m.group('dict'))
-
-    if item.year is not None:
-        movies = []
-        for movie in d.get('movies', []):
-            year = movie.get('year', None)
-            if year is None:
-                continue
-            if year == item.year:
-                movies.append(movie)
-
-        if len(movies) == 0:
-            for movie in d.get('movies', []):
-                year = movie.get('year', None)
-                if year is None:
-                    continue
-                if item.year - 1 <= year <= item.year + 1:
-                    movies.append(movie)
-    else:
-        movies = []
-
-    if len(movies) == 0:
-        if len(d.get('movies', [])) == 1:
-            movies = d.get('movies', [])
-
+def _select_movie(movies, item):
+    movies = __filter_movies(movies, item)
     assert movies
+    if len(movies) == 1:
+        return movies[0]
 
-    movie = None
     for m in movies:
         if m['name'] == item.name:
-            moive = m
+            return m
+    return movies[0]
 
+
+def _get_query(name):
+    m = re.search('^(?P<l>.*), (?P<r>[0-9a-zA-Z]+)$', name)
+    if m:
+        return m.group('r') + ' ' + m.group('l')
+    else:
+        return name
+
+
+def _get_movies_from_page(s, page, q):
+    for i in range(10):
+        r = s.get(
+            'https://www.rottentomatoes.com/api/private/v2.0/search',
+            params={
+                'q': q,
+                't': 'movie',
+                'offset': page * 30,
+                'limit': 30,
+            })
+        print(r.url)
+        data = r.json()
+        movies = data.get('movies')
+        if data.pop('movieCount') == 0:
+            return []
+
+        if movies:
+            return movies
+        else:
+            print(data)
+
+
+def _get_movies(item):
+    s = requests.Session()
+    s.get('https://www.rottentomatoes.com/search/')
+
+    movies = []
+    for page in range(1000):
+        _movies = _get_movies_from_page(s, page, _get_query(item.name))
+        movies.extend(_movies)
+        print('..', page, len(_movies))
+        if not _movies:
+            break
+
+        time.sleep(1)
+    # assert False
+    return movies
+
+
+def _get_rotten_movie(item):
+    if item.year is None:
+        return None
+    # assert item.year
+
+    movies = _get_movies(item)
+    print(len(movies))
+    assert len(movies) < 1000
+
+    movie = _select_movie(movies, item)
     if movie is None:
-        movie = movies[0]
+        return None
 
     print(item.year, item.name)
-    print(movie)
-    print(movie['year'], movie['name'])
+    name = movie.pop('name', '')
+    year = movie.pop('year', '')
+    url = movie.pop('url', '')
+    print(year, name)
 
-    # assert m
-
-    # ul = section.find('ul', 'results_ul')
-    # for li in ul.find_all('li', recursive=False):
-    #     print(li.prettify())
+    rotten_movie = RottenMovie(
+        name=name, year=year, url=url, data=json.dumps(movie))
+    return rotten_movie
 
 
 def main():
     session = Session()
     for i, item in enumerate(session.query(Item)):
-        if i <= 106:
+        if i <= 331:
             continue
 
-        print('>>', i, item.year, item.name)
-        _handle_item(item)
-        # break
-        input('Enter:')
+        print('\n>>', i, item.year, item.name)
+        rotten_movie = _get_rotten_movie(item)
+        if rotten_movie is None:
+            continue
+
+        session.add(rotten_movie)
+        item.rotten_movie = rotten_movie
+        session.commit()
 
 
 if __name__ == '__main__':
