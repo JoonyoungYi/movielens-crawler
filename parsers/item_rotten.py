@@ -99,7 +99,7 @@ def _get_movies(item):
 
 
 def _get_movie(item):
-    if item.year is None:
+    if item.release_date is None or item.year is None:
         return None
     # assert item.year
 
@@ -136,10 +136,10 @@ def _save_movie_to_rotten_movie(session, movie, item):
 def main():
     session = Session()
     for i, item in enumerate(session.query(Item)):
-        # if i <= 1437:
-        #     continue
+        if i <= 264:
+            continue
 
-        print('\n>>', i, item.release_date.year, item.name)
+        print('\n>>', i, item.release_date, item.name)
         movie = _get_movie(item)
         if movie is None:
             continue
