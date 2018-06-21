@@ -57,6 +57,13 @@ class Item(Base):
         nullable=True, )
     original_item_id = Column(Integer, index=True, nullable=True)
 
+    def get_valid_years(self, offset=0):
+        if self.year and self.release_date:
+            min_year = min(self.year, self.release_date.year)
+            max_year = max(self.year, self.release_date.year)
+            return list(range(min_year - offset, max_year + 1 + offset))
+        return []
+
 
 class RottenMovie(Base):
     __tablename__ = 'rotten_movie'
