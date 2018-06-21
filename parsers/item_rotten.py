@@ -8,6 +8,7 @@ import requests
 from models import Session
 from models import Item
 from models import RottenMovie
+from utils.item import get_query
 
 # key = hashlib.sha512(r.url.encode('utf-8')).hexdigest()
 # assert len(key) <= 128
@@ -33,12 +34,17 @@ def __filter_movies(movies, item):
     if len(movies) == 1:
         return movies
 
-    return __filter_movies_by_year(movies, item.year)
+    # for movie in movies:
+    #     print(movie['name'], movie['year'])
+    return __filter_movies_by_year(movies, item.release_date.year)
 
 
 def _select_movie(movies, item):
     movies = __filter_movies(movies, item)
-    assert movies
+    if len(movies) == 0:
+        # 연도에 맞는 영화가 없습니다.
+        return None
+
     if len(movies) == 1:
         return movies[0]
 
@@ -48,91 +54,97 @@ def _select_movie(movies, item):
     return movies[0]
 
 
-def _get_query(name):
-    m = re.search('^(?P<l>.*), (?P<r>[0-9a-zA-Z]+)$', name)
-    if m:
-        return m.group('r') + ' ' + m.group('l')
-    else:
-        return name
-
-
-def _get_movies_from_page(s, page, q):
+def _get_movies_from_page(page, q, unit=100):
     for i in range(10):
-        r = s.get(
+        r = requests.get(
             'https://www.rottentomatoes.com/api/private/v2.0/search',
             params={
                 'q': q,
                 't': 'movie',
-                'offset': page * 30,
-                'limit': 30,
+                'offset': page * unit,
+                'limit': unit,
             })
-        print(r.url)
-        data = r.json()
-        movies = data.get('movies')
-        if data.pop('movieCount') == 0:
-            return []
+        try:
+            data = r.json()
+        except:
+            print(r.url)
+            print(r.text)
 
+            assert False
+        movies = data.get('movies')
+        movie_number = data.pop('movieCount')
+        # print('>>', page, len(movies), movie_count)
+        if movie_number == 0:
+            return [], 0
         if movies:
-            return movies
-        else:
-            print(data)
+            return movies, movie_number
+    return None, None
 
 
 def _get_movies(item):
-    s = requests.Session()
-    s.get('https://www.rottentomatoes.com/search/')
-
-    movies = []
+    query = get_query(item.name)
+    movies, movie_number, unit = [], 0, 30
     for page in range(1000):
-        _movies = _get_movies_from_page(s, page, _get_query(item.name))
-        movies.extend(_movies)
-        print('..', page, len(_movies))
-        if not _movies:
+        _movies, _movie_number = _get_movies_from_page(page, query, unit=unit)
+        movie_number = max(_movie_number, movie_number)
+        if _movies is None:
             break
+        movies.extend(_movies)
+        print('   [*]', page, len(_movies), movie_number)
 
-        time.sleep(1)
-    # assert False
+        if unit * (page + 1) > movie_number:
+            break
+        time.sleep(0.25)
     return movies
 
 
-def _get_rotten_movie(item):
+def _get_movie(item):
     if item.year is None:
         return None
     # assert item.year
 
     movies = _get_movies(item)
-    print(len(movies))
-    assert len(movies) < 1000
+    # print('   [*]', len(movies))
+    if len(movies) == 0:
+        # 검색 결과 없음.
+        return None
 
     movie = _select_movie(movies, item)
     if movie is None:
         return None
 
-    print(item.year, item.name)
+    return movie
+
+
+def _save_movie_to_rotten_movie(session, movie, item):
     name = movie.pop('name', '')
     year = movie.pop('year', '')
     url = movie.pop('url', '')
+    print(item.year, item.name)
     print(year, name)
 
-    rotten_movie = RottenMovie(
-        name=name, year=year, url=url, data=json.dumps(movie))
-    return rotten_movie
+    rotten_movie = session.query(RottenMovie).filter_by(
+        name=name, year=year, url=url).first()
+    if rotten_movie is None:
+        rotten_movie = RottenMovie(
+            name=name, year=year, url=url, data=json.dumps(movie))
+        session.add(rotten_movie)
+    item.rotten_movie = rotten_movie
+    session.commit()
 
 
 def main():
     session = Session()
     for i, item in enumerate(session.query(Item)):
-        if i <= 331:
+        # if i <= 1437:
+        #     continue
+
+        print('\n>>', i, item.release_date.year, item.name)
+        movie = _get_movie(item)
+        if movie is None:
             continue
 
-        print('\n>>', i, item.year, item.name)
-        rotten_movie = _get_rotten_movie(item)
-        if rotten_movie is None:
-            continue
-
-        session.add(rotten_movie)
-        item.rotten_movie = rotten_movie
-        session.commit()
+        _save_movie_to_rotten_movie(session, movie, item)
 
 
 if __name__ == '__main__':
