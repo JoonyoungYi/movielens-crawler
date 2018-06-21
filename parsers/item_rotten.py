@@ -23,18 +23,13 @@ def __filter_movies_by_year(movies, valid_years):
     if not valid_years:
         return []
 
-    # 연도가 정확하게 일치하는 영화를 체크합니다.
-    _movies = [m for m in movies if m.get('year') and m['year'] in valid_years]
-
-    if not _movies:
-        offset = 1
-        valid_years = [valid_years[0] - offset
-                       ] + valid_years + [valid_years[-1] + offset]
-        # 연도가 1년 차이나는 영화를 체크합니다.
-        _movies = [
-            m for m in movies if m.get('year') and m['year'] in valid_years
-        ]
-    return _movies
+    offset = 1
+    valid_years = [valid_years[0] - offset
+                   ] + valid_years + [valid_years[-1] + offset]
+    # 연도가 1년 차이나는 영화를 체크합니다.
+    # 기존에는 연도가 정확한 걸 우선 체크하고 이 코드를 수행했으나,
+    # 예외가 발생해 이렇게 하게 되었습니다.
+    return [m for m in movies if m.get('year') and m['year'] in valid_years]
 
 
 def __filter_movies(movies, valid_years):
@@ -142,6 +137,11 @@ def _get_movie(item):
 
         main_similarity = ___get_str_similarity(main_movie['name'], main_name)
         sub_similarity = ___get_str_similarity(sub_movie['name'], sub_name)
+        if main_name == main_movie['name'] and sub_name != sub_movie['name']:
+            return main_movie
+        if main_name != main_movie['name'] and sub_name == sub_movie['name']:
+            return sub_movie
+
         print(
             '   [*] Main:',
             '{:4f}'.format(main_similarity),
@@ -158,7 +158,8 @@ def _get_movie(item):
             else:
                 return sub_movie
 
-        raise NotImplementedError()
+        # raise NotImplementedError()
+        return None
 
 
 def _save_movie_to_rotten_movie(session, movie, item):
@@ -181,7 +182,7 @@ def _save_movie_to_rotten_movie(session, movie, item):
 def main():
     session = Session()
     for idx, item in enumerate(session.query(Item)):
-        if idx <= 1095:
+        if idx <= 1545:
             continue
 
         print(
