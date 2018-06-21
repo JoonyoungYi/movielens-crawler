@@ -4,7 +4,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-
 from configs import *
 
 engine = create_engine(SQLALCHEMY_DATABASE_URI, echo=False)
@@ -56,6 +55,7 @@ class Item(Base):
         Integer,
         ForeignKey('rotten_movie.id'),
         nullable=True, )
+    original_item_id = Column(Integer, index=True, nullable=True)
 
 
 class RottenMovie(Base):
