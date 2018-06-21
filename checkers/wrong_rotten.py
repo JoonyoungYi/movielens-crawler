@@ -15,21 +15,13 @@ def _is_same_name(item_name, rotten_movie_name):
     return False
 
 
-def _is_valid_year(item, year):
-    item_release_year = item.release_date.year
-    if item_release_year - 1 > year:
-        return False
-    if item_release_year + 1 < year:
-        return False
-    return True
-
-
 session = Session()
 for item in session.query(Item).filter(Item.rotten_movie_id.isnot(None)):
     rotten_movie = item.rotten_movie
     assert rotten_movie
-    if _is_same_name(item.name, rotten_movie.name) and _is_valid_year(
-            item, rotten_movie.year):
+    if _is_same_name(
+            item.name,
+            rotten_movie.name) and item.is_valid_year(rotten_movie.year):
         continue
 
     print('')

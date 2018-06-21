@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy import Column, Integer, String, Date, Boolean, Text, ForeignKey
 from sqlalchemy import create_engine
 from sqlalchemy.orm import relationship
@@ -63,6 +65,32 @@ class Item(Base):
             max_year = max(self.year, self.release_date.year)
             return list(range(min_year - offset, max_year + 1 + offset))
         return []
+
+    def is_valid_year(self, year, offset=0):
+        return year in self.get_valid_years(offset=offset)
+
+    def _handle_last_comma(name):
+        m = re.search('^(?P<l>.*), (?P<r>[0-9a-zA-Z]+)$', name)
+        if m:
+            return '{} {}'.format(m.group('r'), m.group('l')).strip()
+        else:
+            return name.strip()
+
+    def get_main_and_sum_names(self):
+        m = re.search('(?P<main>.*)\s*\((?P<sub>.*)\)', self.name)
+        if m:
+            main = m.group('main')
+            sub = m.group('sub')
+            return Item._handle_last_comma(main), Item._handle_last_comma(sub)
+        else:
+            return Item._handle_last_comma(self.name), None
+
+    def get_pretty_name(self):
+        main_name, sub_name = self.get_main_and_sum_names()
+        if sub_name:
+            return '{} ({})'.format(main_name, sub_name)
+        else:
+            return main_name
 
 
 class RottenMovie(Base):
