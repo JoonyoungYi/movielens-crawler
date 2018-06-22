@@ -1,6 +1,8 @@
 import re
+from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Date, Boolean, Text, ForeignKey
+from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Boolean, Text, Integer, String, Date, DateTime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
@@ -113,3 +115,15 @@ class RottenMovie(Base):
 
     # Relation
     items = relationship('Item', backref='rotten_movie', lazy='dynamic')
+    web_page_id = Column(
+        Integer,
+        ForeignKey('web_page.id'),
+        nullable=True, )
+
+
+class WebPage(Base):
+    __tablename__ = 'web_page'
+
+    id = Column(Integer, nullable=False, primary_key=True)
+    key = Column(String(128), index=True, default='')
+    parsed_datetime = Column(DateTime, default=datetime.now)

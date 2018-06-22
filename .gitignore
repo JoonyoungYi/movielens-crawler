@@ -107,3 +107,4 @@ venv.bak/
 data/
 # configs.py
 configs/local.py
+cdn/
