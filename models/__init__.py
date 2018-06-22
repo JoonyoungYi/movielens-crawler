@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
 from configs import *
+from utils import generator
 
 engine = create_engine(SQLALCHEMY_DATABASE_URI, echo=False)
 Base = declarative_base()
@@ -125,5 +126,5 @@ class WebPage(Base):
     __tablename__ = 'web_page'
 
     id = Column(Integer, nullable=False, primary_key=True)
-    key = Column(String(128), index=True, default='')
+    key = Column(String(128), index=True, default=generator.generate_128_key)
     parsed_datetime = Column(DateTime, default=datetime.now)
