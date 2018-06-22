@@ -27,6 +27,7 @@ class Item(Base):
 
     name = Column(String(150), index=True, default='')
     year = Column(Integer, index=True)
+    rotten_keywords = Column(String(1000), default='')
 
     release_date = Column(Date, index=True)
     video_release_date = Column(Date)
@@ -70,17 +71,18 @@ class Item(Base):
         return year in self.get_valid_years(offset=offset)
 
     def _handle_last_comma(name):
-        m = re.search('^(?P<l>.*), (?P<r>[0-9a-zA-Z]+)$', name)
+        m = re.search('^(?P<l>.*), (?P<r>[0-9a-zA-Z\']+)$', name.strip())
         if m:
             return '{} {}'.format(m.group('r'), m.group('l')).strip()
         else:
             return name.strip()
 
     def get_main_and_sum_names(self):
-        m = re.search('(?P<main>.*)\s*\((?P<sub>.*)\)', self.name)
+        m = re.search('(?P<main>.*)\s*\((?P<sub>.*)\)\s*$', self.name)
         if m:
             main = m.group('main')
             sub = m.group('sub')
+            # print(main, sub)
             return Item._handle_last_comma(main), Item._handle_last_comma(sub)
         else:
             return Item._handle_last_comma(self.name), None
@@ -91,6 +93,11 @@ class Item(Base):
             return '{} ({})'.format(main_name, sub_name)
         else:
             return main_name
+
+    def get_rotten_keywords(self):
+        if self.rotten_keywords:
+            return [k.strip() for k in self.rotten_keywords.split('|')]
+        return []
 
 
 class RottenMovie(Base):

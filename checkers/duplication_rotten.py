@@ -13,7 +13,9 @@ session = Session()
 for rotten_movie in session.query(RottenMovie):
     items = rotten_movie.items.all()
     if len(items) == 0:
-        raise NotImplementedError('RottenMovie 모델을 지우는 코드를 작성해야 합니다.')
+        # raise NotImplementedError('RottenMovie 모델을 지우는 코드를 작성해야 합니다.')
+        session.delete(rotten_movie)
+        session.commit()
     elif len(items) == 1:
         continue
 
@@ -28,4 +30,8 @@ for rotten_movie in session.query(RottenMovie):
         rotten_movie.name,
         len(items), )
     for item in items:
-        print('   [*]', '{:4d}'.format(item.id), item.year, item.name)
+        print(
+            '   [*]',
+            '{:4d}'.format(item.id),
+            item.get_valid_years(),
+            item.get_pretty_name(), )

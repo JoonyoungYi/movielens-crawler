@@ -19,11 +19,10 @@ def ___get_str_similarity(a, b):
     return SequenceMatcher(None, a, b).ratio()
 
 
-def __filter_movies_by_year(movies, valid_years):
+def __filter_movies_by_year(movies, valid_years, offset=2):
     if not valid_years:
         return []
 
-    offset = 1
     valid_years = [valid_years[0] - offset
                    ] + valid_years + [valid_years[-1] + offset]
     # 연도가 1년 차이나는 영화를 체크합니다.
@@ -32,30 +31,40 @@ def __filter_movies_by_year(movies, valid_years):
     return [m for m in movies if m.get('year') and m['year'] in valid_years]
 
 
-def __filter_movies(movies, valid_years):
-    if len(movies) == 1:
-        return movies
-
-    return __filter_movies_by_year(movies, valid_years)
+def __filter_movies_by_query(movies, query):
+    return [m for m in movies if m['name'] == query]
 
 
 def _select_movie(movies, query, valid_years):
-    movies = __filter_movies(movies, valid_years)
-    if len(movies) == 0:
-        # 연도에 맞는 영화가 없습니다.
-        return None
-
     if len(movies) == 1:
         return movies[0]
 
-    for m in movies:
+    _movies = __filter_movies_by_year(movies, valid_years)
+    if _movies:
+        if len(_movies) == 1:
+            return _movies[0]
+
+        for m in _movies:
+            if m['name'] == query:
+                return m
+
+        return _movies[0]
+
+    _movies = __filter_movies_by_year(movies, valid_years, offset=3)
+    # 이 때는 완벽하게 일치할 때만 진행합니다. 거기에 연도도 확인합니다.
+    # 아닌 경우 불상사가 발생할 수 있습니다.
+    for m in _movies:
         if m['name'] == query:
             return m
 
-    return movies[0]
+    # 연도에 맞는 영화가 없습니다.
+    return None
 
 
 def _request_movies_from_page(page, q, unit=100):
+    q = re.sub('\'\s+', '', q)
+    q = re.sub('\'', ' ', q)
+    q = re.sub('\s+', ' ', q)
     for i in range(10):
         r = requests.get(
             'https://www.rottentomatoes.com/api/private/v2.0/search',
@@ -101,7 +110,11 @@ def _request_movies_by_query(query):
 
 def _request_movie(query, valid_years):
     movies = _request_movies_by_query(query)
-    return _select_movie(movies, query, valid_years)
+    # print(type(movies))
+    movie = _select_movie(movies, query, valid_years)
+    # print(movie)
+    assert movie is None or type(movie) == dict
+    return movie
 
 
 def _get_movie(item):
@@ -111,10 +124,13 @@ def _get_movie(item):
 
     main_name, sub_name = item.get_main_and_sum_names()
     valid_years = item.get_valid_years()
+
     if not sub_name:
         # 괄호가 없는 케이스를 핸들링합니다.
         movie = _request_movie(main_name, valid_years)
-        return movie
+        if movie:
+            return movie
+
     else:
         movie = _request_movie('{} ({})'.format(main_name, sub_name),
                                valid_years)
@@ -132,37 +148,49 @@ def _get_movie(item):
             return main_movie
         if sub_movie and not main_movie:
             return sub_movie
-        if not sub_movie and not main_movie:
-            return None
-
-        main_similarity = ___get_str_similarity(main_movie['name'], main_name)
-        sub_similarity = ___get_str_similarity(sub_movie['name'], sub_name)
-        if main_name == main_movie['name'] and sub_name != sub_movie['name']:
-            return main_movie
-        if main_name != main_movie['name'] and sub_name == sub_movie['name']:
-            return sub_movie
-
-        print(
-            '   [*] Main:',
-            '{:4f}'.format(main_similarity),
-            main_movie['name'], )
-        print(
-            '   [*] Sub :',
-            '{:4f}'.format(sub_similarity),
-            sub_movie['name'], )
-
-        input('Enter:')
-        if abs(main_similarity - sub_similarity) > 0.5:
-            if main_similarity > sub_similarity:
+        if sub_movie and main_movie:
+            main_similarity = ___get_str_similarity(main_movie['name'],
+                                                    main_name)
+            sub_similarity = ___get_str_similarity(sub_movie['name'], sub_name)
+            if main_name == main_movie['name'] and sub_name != sub_movie['name']:
                 return main_movie
-            else:
+            if main_name != main_movie['name'] and sub_name == sub_movie['name']:
                 return sub_movie
 
-        # raise NotImplementedError()
-        return None
+            print(
+                '   [*] Main:',
+                '{:4f}'.format(main_similarity),
+                main_movie['name'],
+                main_movie['year'],
+                main_movie['url'], )
+            print(
+                '   [*] Sub :',
+                '{:4f}'.format(sub_similarity),
+                sub_movie['name'],
+                sub_movie['year'],
+                sub_movie['url'], )
+
+            raw = None
+            while raw != 'm' and raw != 's' and raw != 'u':
+                raw = input('Enter Main(m) / Sub(s) / Unknown(u) :')
+                raw = raw.strip().lower()
+
+            if raw == 'm':
+                return main_movie
+            elif raw == 's':
+                return sub_movie
+
+    # 결정된 사안이 없으면, keywords를 활용합니다.
+    for keyword in item.get_rotten_keywords():
+        movie = _request_movie(keyword, valid_years)
+        if movie:
+            return movie
+
+    return None
 
 
 def _save_movie_to_rotten_movie(session, movie, item):
+    # print(movie)
     name = movie.pop('name', '')
     year = movie.pop('year', '')
     url = movie.pop('url', '')
@@ -181,15 +209,29 @@ def _save_movie_to_rotten_movie(session, movie, item):
 
 def main():
     session = Session()
-    for idx, item in enumerate(session.query(Item)):
-        if idx <= 1545:
+    for idx, item in enumerate(
+            session.query(Item).filter(Item.rotten_movie_id.is_(None))):
+        if item.id < 1623:
             continue
 
         print(
             '\n>>',
-            idx,
+            item.id,
             item.get_valid_years(),
             item.get_pretty_name(), )
+
+        raw = None
+        while raw != 'y' and raw != 'n':
+            raw = input(
+                'Want to input keyword? Enter, yes(y) / no(n): ').strip()
+
+        if raw == 'y':
+            keyword = None
+            while not keyword:
+                keyword = input('Enter Keyword: ').strip()
+            item.rotten_keywords = keyword
+            session.commit()
+
         movie = _get_movie(item)
         if movie is None:
             continue
