@@ -48,6 +48,7 @@ def __save(key, text):
 
 def _request_and_save(key, path):
     text = __request(path)
+    print(path)
     # assert False
     if not text:
         return False

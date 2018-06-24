@@ -83,8 +83,8 @@ def main():
         soup = _get_soup_from_amazon_movie(amazon_movie)
         if soup is None:
             print('  [-] File Not Found')
-            # session.delete(amazon_movie.web_page)
-            # amazon_movie.web_page_id = None
+            session.delete(amazon_movie.web_page)
+            amazon_movie.web_page_id = None
             continue
 
         price_dict = _get_price_dict_from_soup(soup)
