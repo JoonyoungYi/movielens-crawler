@@ -7,13 +7,11 @@ from bs4 import BeautifulSoup
 from models import Session
 from models import AppleMovie
 from models import WebPage
+from utils.cdn import get_soup_from_web_page
 
 
 def _get_soup_from_apple_movie(apple_movie):
-    with open('cdn/{}.html'.format(apple_movie.web_page.key), 'r') as f:
-        soup = BeautifulSoup(f.read(), "html5lib")
-        return soup
-    return None
+    return get_soup_from_web_page(apple_movie.web_page)
 
 
 def _get_price_from_soup(soup):
@@ -69,7 +67,7 @@ def main():
         price = _get_price_from_soup(soup)
         if not price:
             continue
-            
+
         apple_movie.price = price
 
         if idx % 100 == 0:

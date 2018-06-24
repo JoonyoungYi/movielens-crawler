@@ -8,17 +8,11 @@ from bs4 import BeautifulSoup
 from models import Session
 from models import AmazonMovie
 from models import WebPage
+from utils.cdn import get_soup_from_web_page
 
 
 def _get_soup_from_amazon_movie(amazon_movie):
-    try:
-        with open('cdn/{}.html'.format(amazon_movie.web_page.key), 'r') as f:
-            soup = BeautifulSoup(f.read(), "html5lib")
-            return soup
-    except:
-        pass
-        # print(format_exc())
-    return None
+    return get_soup_from_web_page(amazon_movie.web_page)
 
 
 def __get_price_from_form(form):

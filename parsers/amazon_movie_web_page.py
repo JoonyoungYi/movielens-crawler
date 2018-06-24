@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from models import Session
 from models import AmazonMovie
 from models import WebPage
+from utils.cdn import save_to_cdn
 
 
 def __request(path):
@@ -42,10 +43,7 @@ def __request(path):
 
 
 def __save(key, text):
-    with open('cdn/{}.html'.format(key), 'w') as f:
-        f.write(text)
-        return True
-    return False
+    return save_to_cdn(key, text)
 
 
 def _request_and_save(key, path):

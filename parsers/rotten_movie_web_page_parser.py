@@ -6,13 +6,11 @@ from bs4 import BeautifulSoup
 from models import Session
 from models import RottenMovie
 from models import WebPage
+from utils.cdn import get_soup_from_web_page
 
 
 def _get_soup_from_rotten_movie(rotten_movie):
-    with open('cdn/{}.html'.format(rotten_movie.web_page.key), 'r') as f:
-        soup = BeautifulSoup(f.read(), "html5lib")
-        return soup
-    return None
+    return get_soup_from_web_page(rotten_movie.web_page)
 
 
 def _get_affiliate_url(movie_div, div_id):
