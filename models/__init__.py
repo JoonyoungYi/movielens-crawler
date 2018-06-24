@@ -56,6 +56,8 @@ class Item(Base):
     category_war = Column(Boolean, default=False, nullable=False)
     category_western = Column(Boolean, default=False, nullable=False)
 
+    price = Column(Float, index=True, default=None)
+
     # Relation
     rotten_movie_id = Column(
         Integer,
@@ -153,7 +155,7 @@ class AppleMovie(Base):
 
     id = Column(Integer, nullable=False, primary_key=True)
     url = Column(String(150), index=True, default='')  # 발견된 최대 길이 76
-    price = Column(Float, index=True, default=0.0)
+    price = Column(Float, index=True, default=None)
 
     # Relation
     web_page_id = Column(
@@ -170,10 +172,10 @@ class AmazonMovie(Base):
     id = Column(Integer, nullable=False, primary_key=True)
     url = Column(String(150), index=True, default='')  # 발견된 최대 길이 58
 
-    hd_buy_price = Column(Float, index=True, default=0.0)
-    sd_buy_price = Column(Float, index=True, default=0.0)
-    hd_rent_price = Column(Float, index=True, default=0.0)
-    sd_rent_price = Column(Float, index=True, default=0.0)
+    hd_buy_price = Column(Float, index=True, default=None)
+    sd_buy_price = Column(Float, index=True, default=None)
+    hd_rent_price = Column(Float, index=True, default=None)
+    sd_rent_price = Column(Float, index=True, default=None)
 
     # Relation
     web_page_id = Column(
@@ -182,6 +184,16 @@ class AmazonMovie(Base):
         nullable=True, )
     rotten_movies = relationship(
         'RottenMovie', backref='amazon_movie', lazy='dynamic')
+
+    def get_price(self):
+        prices = [
+            self.hd_buy_price, self.sd_buy_price, self.hd_rent_price,
+            self.sd_rent_price
+        ]
+        prices = [p for p in prices if p and p > 0.0]
+        if prices:
+            return max(prices)
+        return None
 
 
 class WebPage(Base):
