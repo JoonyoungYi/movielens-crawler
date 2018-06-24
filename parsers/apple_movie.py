@@ -9,30 +9,6 @@ from models import AppleMovie
 from models import WebPage
 
 
-def __request(path):
-    try:
-        r = requests.get('https://www.rottentomatoes.com{}'.format(path))
-        return r.text
-    except:
-        print(format_exc())
-        return None
-
-
-def __save(key, text):
-    with open('cdn/{}.html'.format(key), 'w') as f:
-        f.write(text)
-        return True
-    return False
-
-
-def _request_and_save(key, path):
-    text = __request(path)
-    if not text:
-        return False
-
-    return __save(key, text)
-
-
 def main():
     session = Session()
 

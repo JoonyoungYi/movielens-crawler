@@ -135,6 +135,10 @@ class RottenMovie(Base):
         Integer,
         ForeignKey('apple_movie.id'),
         nullable=True, )
+    amazon_movie_id = Column(
+        Integer,
+        ForeignKey('amazon_movie.id'),
+        nullable=True, )
 
     # Relation(ETC)
     items = relationship('Item', backref='rotten_movie', lazy='dynamic')
@@ -147,8 +151,6 @@ class RottenMovie(Base):
 class AppleMovie(Base):
     __tablename__ = 'apple_movie'
 
-    BASE_URL = 'https://itunes.apple.com/us/movie'
-
     id = Column(Integer, nullable=False, primary_key=True)
     url = Column(String(150), index=True, default='')  # 발견된 최대 길이 76
     price = Column(Float, index=True, default=0.0)
@@ -158,6 +160,24 @@ class AppleMovie(Base):
         Integer,
         ForeignKey('web_page.id'),
         nullable=True, )
+    rotten_movies = relationship(
+        'RottenMovie', backref='apple_movie', lazy='dynamic')
+
+
+class AmazonMovie(Base):
+    __tablename__ = 'amazon_movie'
+
+    id = Column(Integer, nullable=False, primary_key=True)
+    url = Column(String(150), index=True, default='')  # 발견된 최대 길이 58
+    # price = Column(Float, index=True, default=0.0)
+
+    # Relation
+    web_page_id = Column(
+        Integer,
+        ForeignKey('web_page.id'),
+        nullable=True, )
+    rotten_movies = relationship(
+        'RottenMovie', backref='amazon_movie', lazy='dynamic')
 
 
 class WebPage(Base):
@@ -172,3 +192,5 @@ class WebPage(Base):
         'RottenMovie', backref='web_page', lazy='dynamic')
     apple_movies = relationship(
         'AppleMovie', backref='web_page', lazy='dynamic')
+    amazon_movies = relationship(
+        'AmazonMovie', backref='web_page', lazy='dynamic')
