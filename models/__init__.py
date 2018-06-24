@@ -130,8 +130,25 @@ class RottenMovie(Base):
     affiliate_netflix_valid = Column(Boolean, index=True, default=False)
     affiliate_netflix_url = Column(String(1000), default='')
 
-    # Relation
+    # Relation(Affiliate)
+    apple_movie_id = Column(
+        Integer,
+        ForeignKey('apple_movie.id'),
+        nullable=True, )
+
+    # Relation(ETC)
     items = relationship('Item', backref='rotten_movie', lazy='dynamic')
+    web_page_id = Column(
+        Integer,
+        ForeignKey('web_page.id'),
+        nullable=True, )
+
+
+class AppleMovie(Base):
+    __tablename__ = 'apple_movie'
+    id = Column(Integer, nullable=False, primary_key=True)
+
+    # Relation
     web_page_id = Column(
         Integer,
         ForeignKey('web_page.id'),
@@ -148,3 +165,5 @@ class WebPage(Base):
     # Relation
     rotten_movies = relationship(
         'RottenMovie', backref='web_page', lazy='dynamic')
+    apple_movies = relationship(
+        'AppleMovie', backref='web_page', lazy='dynamic')
