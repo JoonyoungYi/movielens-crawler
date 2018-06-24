@@ -114,6 +114,8 @@ class RottenMovie(Base):
 
     data = Column(Text, default='')
 
+    # 
+
     # Relation
     items = relationship('Item', backref='rotten_movie', lazy='dynamic')
     web_page_id = Column(

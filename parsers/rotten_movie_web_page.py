@@ -1,5 +1,6 @@
-import requests
 from traceback import format_exc
+
+import requests
 
 from models import Session
 from models import RottenMovie
