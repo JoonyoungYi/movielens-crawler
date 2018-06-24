@@ -169,7 +169,11 @@ class AmazonMovie(Base):
 
     id = Column(Integer, nullable=False, primary_key=True)
     url = Column(String(150), index=True, default='')  # 발견된 최대 길이 58
-    # price = Column(Float, index=True, default=0.0)
+
+    hd_buy_price = Column(Float, index=True, default=0.0)
+    sd_buy_price = Column(Float, index=True, default=0.0)
+    hd_rent_price = Column(Float, index=True, default=0.0)
+    sd_rent_price = Column(Float, index=True, default=0.0)
 
     # Relation
     web_page_id = Column(
