@@ -126,5 +126,9 @@ class WebPage(Base):
     __tablename__ = 'web_page'
 
     id = Column(Integer, nullable=False, primary_key=True)
-    key = Column(String(128), index=True, default=generator.generate_128_key)
+    key = Column(String(128), index=True, default=generator.generate_50_key)
     parsed_datetime = Column(DateTime, default=datetime.now)
+
+    # Relation
+    rotten_movies = relationship(
+        'RottenMovie', backref='web_page', lazy='dynamic')
