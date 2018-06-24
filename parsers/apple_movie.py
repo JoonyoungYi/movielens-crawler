@@ -1,5 +1,6 @@
 from traceback import format_exc
 
+import re
 import requests
 
 from models import Session
@@ -42,28 +43,22 @@ def main():
         # if rotten_movie.id < 1623:
         #     continue
 
-        print(rotten_movie.affiliate_apple_url)
-        # print(
-        #     '>>',
-        #     '{:4d}'.format(rotten_movie.id), )
-        # if not rotten_movie.url:
-        #     continue
-        #
-        # web_page = WebPage()
-        # session.add(web_page)
-        # rotten_movie.web_page = web_page
-        # session.commit()
-        #
-        # success = _request_and_save(web_page.key, rotten_movie.url)
-        # if not success:
-        #     session.delete(web_page)
-        #     rotten_movie.web_page = None
-        #     session.commit()
-        #     print('  [-] Fail')
-        # else:
-        #     print('  [+] Success')
+        m = re.search('https://itunes.apple.com/us/movie/(?P<path>.*)$',
+                      rotten_movie.affiliate_apple_url)
+        assert m
+        url = '/{}'.format(m.group('path'))
+        print('>>', rotten_movie.id, url)
 
-        # break
+        apple_movie = session.query(AppleMovie).filter_by(url=url).first()
+        if apple_movie is None:
+            apple_movie = AppleMovie(url=url)
+            session.add(apple_movie)
+
+        rotten_movie.apple_movie = apple_movie
+
+        if idx % 100 == 0:
+            session.commit()
+    session.commit()
 
 
 if __name__ == '__main__':

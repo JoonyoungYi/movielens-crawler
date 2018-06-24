@@ -146,7 +146,11 @@ class RottenMovie(Base):
 
 class AppleMovie(Base):
     __tablename__ = 'apple_movie'
+
+    BASE_URL = 'https://itunes.apple.com/us/movie'
+
     id = Column(Integer, nullable=False, primary_key=True)
+    url = Column(String(150), index=True, default='')  # 발견된 최대 길이 76
 
     # Relation
     web_page_id = Column(
