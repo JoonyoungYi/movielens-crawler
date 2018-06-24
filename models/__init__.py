@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy import Boolean, Text, Integer, String, Date, DateTime
+from sqlalchemy import Boolean, Text, Integer, String, Date, DateTime, Float
 from sqlalchemy import create_engine
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
@@ -151,6 +151,7 @@ class AppleMovie(Base):
 
     id = Column(Integer, nullable=False, primary_key=True)
     url = Column(String(150), index=True, default='')  # 발견된 최대 길이 76
+    price = Column(Float, index=True, default=0.0)
 
     # Relation
     web_page_id = Column(
