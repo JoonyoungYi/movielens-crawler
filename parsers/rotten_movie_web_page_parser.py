@@ -15,14 +15,25 @@ def _get_soup_from_rotten_movie(rotten_movie):
     return None
 
 
+def _get_affiliate_url(movie_div, div_id):
+    for a_tag in movie_div.find_all('a', recursive=False):
+        div = a_tag.find('div', recursive=False)
+        assert div['id'] in ("amazonAffiliates", 'itunesAffiliates',
+                             'FandangoNow', 'vuduAffiliates',
+                             'netflixAffiliates', )
+        if div['id'] == div_id:
+            return a_tag['href']
+    return None
+
+
 def main():
     session = Session()
 
     for idx, rotten_movie in enumerate(
             session.query(RottenMovie).filter(
                 RottenMovie.web_page_id.isnot(None))):
-        # if rotten_movie.id < 434:
-        #     continue
+        if rotten_movie.id < 434:
+            continue
 
         print(
             '>>',
@@ -39,17 +50,28 @@ def main():
 
         if len(movie_divs) <= 0:
             continue
+        movie_div = movie_divs[0]
 
-        for a_tag in movie_divs[0].find_all('a', recursive=False):
-            div = a_tag.find('div', recursive=False)
-            div_id = div['id']
-            if div_id not in ("amazonAffiliates", 'itunesAffiliates',
-                              'FandangoNow', 'vuduAffiliates',
-                              'netflixAffiliates', ):
-                print(div_id)
-                raise NotImplementedError()
+        for keyword, div_id in [
+            ('amazon', "amazonAffiliates"),
+            ('apple', 'itunesAffiliates'),
+            ('fandangonow', 'FandangoNow'),
+            ('vudu', 'vuduAffiliates'),
+            ('netflix', 'netflixAffiliates', ),
+        ]:
+            prefix = 'affiliate_{}'.format(keyword)
+            valid_column_name = '{}_valid'.format(prefix)
+            url_column_name = '{}_url'.format(prefix)
 
-        # break
+            affiliate_url = _get_affiliate_url(movie_div, div_id)
+            if affiliate_url:
+                setattr(rotten_movie, valid_column_name, True)
+                setattr(rotten_movie, url_column_name, affiliate_url)
+            else:
+                setattr(rotten_movie, valid_column_name, False)
+                setattr(rotten_movie, url_column_name, '')
+
+        session.commit()
 
 
 if __name__ == '__main__':
