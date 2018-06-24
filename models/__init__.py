@@ -114,7 +114,21 @@ class RottenMovie(Base):
 
     data = Column(Text, default='')
 
-    # 
+    #
+    affiliate_amazon_valid = Column(Boolean, index=True, default=False)
+    affiliate_amazon_url = Column(String(1000), default='')
+
+    affiliate_apple_valid = Column(Boolean, index=True, default=False)
+    affiliate_apple_url = Column(String(1000), default='')
+
+    affiliate_fandangonow_valid = Column(Boolean, index=True, default=False)
+    affiliate_fandangonow_url = Column(String(1000), default='')
+
+    affiliate_vudu_valid = Column(Boolean, index=True, default=False)
+    affiliate_vudu_url = Column(String(1000), default='')
+
+    affiliate_netflix_valid = Column(Boolean, index=True, default=False)
+    affiliate_netflix_url = Column(String(1000), default='')
 
     # Relation
     items = relationship('Item', backref='rotten_movie', lazy='dynamic')
